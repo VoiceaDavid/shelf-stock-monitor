@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<p><a href="/">← back</a></p>
+<h2>Link {{ pos.label }} to a product</h2>
+{% if error %}<div class="msg err">{{ error }}</div>{% endif %}
+<form method="post">
+  <p>
+    <label>Product (from your Shopify store)<br>
+    <select name="variant" required>
+      {% for v in variants %}
+        {% set linked_here = pos.product and pos.product.variant_id == v.id %}
+        <option value="{{ v.id }}|{{ v.inventory_item_id }}|{{ v.title }}"
+          {% if linked_here %}selected{% endif %}
+          {% if (v.id in taken and not linked_here) or not v.tracked %}disabled{% endif %}>
+          {{ v.title }}{% if v.sku %} ({{ v.sku }}){% endif %}{% if v.id in taken and not linked_here %} – already linked{% endif %}{% if not v.tracked %} – quantity not tracked{% endif %}
+        </option>
+      {% endfor %}
+    </select></label>
+  </p>
+  <p>
+    <label>Low-stock threshold<br>
+    <input type="number" name="threshold" min="0" max="20" value="{{ pos.product.threshold if pos.product else 3 }}"></label>
+    <span class="muted">You get an email when the shelf count reaches this number (Sprint 2).</span>
+  </p>
+  <p><button class="primary">Save</button></p>
+</form>
+{% if pos.product %}
+<form method="post" action="/positions/{{ pos.id }}/unlink"><button>Unlink {{ pos.product.title }}</button></form>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block head %}<meta http-equiv="refresh" content="5">{% endblock %}
+{% block content %}
+{% if dry_run %}<div class="banner">Dry-run mode: Shopify is not called, stock updates are only logged.</div>{% endif %}
+{% if msg %}<div class="msg">{{ msg }}</div>{% endif %}
+
+<h2>Shelf positions</h2>
+{% if not positions %}
+  <p class="muted">No shelf device has connected yet. Power on the ESP32 (or run tools/simulator.py) and this page fills in by itself.</p>
+{% else %}
+<table>
+  <tr><th>Position</th><th>Shelf count</th><th>Status</th><th>Linked product</th><th>Online stock</th><th>Calibration</th><th></th></tr>
+  {% for p in positions %}
+  <tr>
+    <td><strong>{{ p.label }}</strong><div class="muted">updated {{ p.updated_at.strftime('%H:%M:%S') ~ ' UTC' if p.updated_at else '-' }}</div></td>
+    <td class="count">{{ p.count if p.count is not none else '–' }}</td>
+    <td><span class="pill {{ p.status }}">{{ p.status }}</span></td>
+    <td>
+      {% if p.product %}{{ p.product.title }}<div class="muted">low-stock threshold: {{ p.product.threshold }}</div>
+      {% else %}<span class="muted">not linked</span>{% endif %}
+    </td>
+    <td>
+      {% if p.product %}
+        {% if p.product.last_sync_error %}<span class="pill error">sync error</span><div class="muted">{{ p.product.last_sync_error }}</div>
+        {% elif p.product.last_synced_count is not none %}{{ p.product.last_synced_count }}<div class="muted">at {{ p.product.last_synced_at.strftime('%H:%M:%S') }}</div>
+        {% else %}<span class="muted">not synced yet</span>{% endif %}
+      {% else %}–{% endif %}
+    </td>
+    <td>
+      <form class="inline" method="post" action="/positions/{{ p.id }}/tare"><button title="Remove everything from the plate first">Tare (empty)</button></form>
+      <form class="inline" method="post" action="/positions/{{ p.id }}/calibrate">
+        <input type="number" name="items" value="10" min="1" max="20"> <button>Calibrate</button>
+      </form>
+      <div class="muted">{{ 'calibrated' if p.calibrated else 'not calibrated' }}{% if p.last_message %} · {{ p.last_message }}{% endif %}</div>
+    </td>
+    <td>
+      <a class="btn" href="/positions/{{ p.id }}/link">{{ 'Change' if p.product else 'Link product' }}</a>
+      {% if p.product %}<form class="inline" method="post" action="/positions/{{ p.id }}/sync"><button>Sync now</button></form>{% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+{% endif %}
+
+<h2>Shelf devices</h2>
+<table>
+  <tr><th>Device</th><th>Last seen</th><th>Wi-Fi signal</th></tr>
+  {% for d in devices %}
+  <tr><td>{{ d.id }}</td><td>{{ d.last_seen.strftime('%Y-%m-%d %H:%M:%S') if d.last_seen else '-' }}</td><td>{{ d.rssi ~ ' dBm' if d.rssi is not none else '-' }}</td></tr>
+  {% else %}<tr><td colspan="3" class="muted">none yet</td></tr>{% endfor %}
+</table>
+
+<h2>Latest stock changes</h2>
+<table>
+  <tr><th>Time (UTC)</th><th>Position</th><th>Change</th><th>Reason</th><th>Event #</th></tr>
+  {% for h in history %}
+  <tr><td>{{ h.created_at.strftime('%H:%M:%S') }}</td><td>{{ h.position.label }}</td><td>{{ h.old_count }} → {{ h.new_count }}</td><td>{{ h.reason }}</td><td>{{ h.seq }}</td></tr>
+  {% else %}<tr><td colspan="5" class="muted">none yet</td></tr>{% endfor %}
+</table>
+<p class="muted">This page refreshes every 5 seconds.</p>
+{% endblock %}
