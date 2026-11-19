@@ -1,0 +1,24 @@
+# secrets (NFR-05): never commit these
+.env
+firmware/shelf_node/config.h
+broker/certs/
+broker/config/passwd
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+cloud/*.db
+
+# build output
+firmware/test/test_counting
+firmware/test/*.exe
+build/
+
+# editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
