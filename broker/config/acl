@@ -1,0 +1,10 @@
+# The cloud service may read and write every shelf topic.
+user cloud
+topic readwrite shelf/#
+
+# Every shelf device may only publish under its own name (%u = MQTT username)
+# and only read its own command topic. A device cannot fake another device.
+pattern write shelf/%u/event
+pattern write shelf/%u/heartbeat
+pattern write shelf/%u/calib
+pattern read shelf/%u/cmd
